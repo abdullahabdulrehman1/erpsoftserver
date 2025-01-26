@@ -279,6 +279,7 @@ export const generatePurchaseOrderReport = async (req, res) => {
           { property: "amount", label: "Total Amount", width: 80 },
         ];
 
+        const validSortFields = ["date", "poNumber", "supplier", "store", "requisitionType", "quantity","amount", "totalAmount"];
     // Prepare data for the PDF report
     const reportData = data.map((po) => ({
       poNumber: po.poNumber,
@@ -300,6 +301,7 @@ export const generatePurchaseOrderReport = async (req, res) => {
       reportType: "Purchase Order",
       fromDate,
       toDate,
+      validSortFields,
     });
 
     // Generate URL for the report

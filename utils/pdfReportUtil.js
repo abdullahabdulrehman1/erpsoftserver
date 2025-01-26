@@ -9,11 +9,7 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 const streamPipeline = promisify(pipeline);
 
-const ensureDirectoryExists = (dir) => {
-  if (!fs.existsSync(dir)) {
-    fs.mkdirSync(dir, { recursive: true });
-  }
-};
+
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -26,10 +22,10 @@ export const generatePdfReport = async ({
   reportType,
   fromDate,
   toDate,
+  validSortFields,
 }) => {
   try {
     // Validate and sort data
-    const validSortFields = ["date", "amount", "department", "drNumber", "poNumber"];
     if (sortBy && !validSortFields.includes(sortBy)) {
       throw new Error(`Invalid sort field: ${sortBy}`);
     }
@@ -54,7 +50,7 @@ export const generatePdfReport = async ({
 
     // Define directories and file names
     const reportsDir = path.join(__dirname, "reports");
-    ensureDirectoryExists(reportsDir);
+    
 
     const today = moment().format("YYYY-MM-DD");
     const reportId = `RP-${Date.now()}`;
@@ -99,8 +95,8 @@ export const generatePdfReport = async ({
         const row = columns.map((col) => {
           if (col.property === "serial") {
             return serialNumber++; // Increment serial number
-          } else if (col.property === "date") {
-            return moment(entry.date).format("YYYY-MM-DD");
+          } else if (col.property === "date" || col.property === "irDate") {
+            return moment(entry.date || entry.irDate).format("YYYY-MM-DD");
           } else if (col.property === "quantity") {
             totals.quantity += item.quantity;
             return item.quantity;
