@@ -3,6 +3,8 @@ import { isAuthenticated } from "../middlewares/auth.js";
 import {
   createGRN,
   deleteGRN,
+  
+  generateGRNReport,
   getGRNById,
   updateGRN,
 } from "../controllers/GRNGeneral.js";
@@ -15,5 +17,9 @@ app.post("/createGRN",createGRNValidator(),validatorHandler, createGRN);
 app.get("/get-grn", getGRNById);
 app.delete("/delete-grn", deleteGRN);
 app.put("/update-grn", updateGRN);
+
+
+
+app.get("/generatePdfReport",generateGRNReport)
 
 export default app;

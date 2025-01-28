@@ -9,7 +9,6 @@ import { fileURLToPath } from "url";
 import { dirname } from "path";
 const streamPipeline = promisify(pipeline);
 
-
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
@@ -50,7 +49,9 @@ export const generatePdfReport = async ({
 
     // Define directories and file names
     const reportsDir = path.join(__dirname, "reports");
-    
+    if (!fs.existsSync(reportsDir)) {
+      fs.mkdirSync(reportsDir, { recursive: true });
+    }
 
     const today = moment().format("YYYY-MM-DD");
     const reportId = `RP-${Date.now()}`;
@@ -157,6 +158,9 @@ export const generatePdfReport = async ({
       public_id: `reports/${fileName}`,
       overwrite: true,
     });
+
+    // Remove the local file after uploading
+    fs.unlinkSync(filePath);
 
     return {
       url: result.secure_url,

@@ -4,6 +4,7 @@ import {
   createReturnGRN,
   deleteGRNReturnById,
   editGRNReturnById,
+  generateGRNReturnReport,
   getGRNReturnsByUserId,
 } from "../controllers/GRNReturnGeneral.js";
 const app = express();
@@ -13,4 +14,5 @@ app.get("/get-grn-returns", getGRNReturnsByUserId);
 app.delete("/delete-grn-return-general", deleteGRNReturnById);
 app.put("/edit-grn-return-general", editGRNReturnById);
 
+app.get("/generatePdfReport", generateGRNReturnReport);
 export default app;

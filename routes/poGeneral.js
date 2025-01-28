@@ -25,7 +25,7 @@ app.get("/showPO", showPurchaseOrders);
 app.delete("/deletePO", deletePurchaseOrder);
 app.put(
   "/editPurchaseOrder",
-  createPurchaseOrderValidator(),
+  
   validatorHandler,
   editPurchaseOrder
 );

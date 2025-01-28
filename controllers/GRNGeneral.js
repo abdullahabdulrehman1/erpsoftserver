@@ -1,7 +1,10 @@
 import GRN from "../models/GRNGeneral.js";
 import { PurchaseOrder } from "../models/poGeneral.js";
 import { User } from "../models/user.js";
-
+import { generatePdfReport } from "../utils/pdfReportUtil.js";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
+import moment from 'moment'
 export const createGRN = async (req, res) => {
   const {
     grnNumber,
@@ -276,4 +279,94 @@ export const updateGRN = async (req, res) => {
 const isValidPONumber = (poNumber) => {
   // Add your PO number validation logic here
   return true; // Placeholder, replace with actual validation logic
+};
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export const generateGRNReport = async (req, res) => {
+  try {
+    const { fromDate, toDate, sortBy, order, columns } = req.query;
+
+    // Validate and parse inputs
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "Invalid date range" });
+    }
+
+    const from = moment(fromDate, "DD-MM-YYYY").startOf('day').toDate();
+    const to = moment(toDate, "DD-MM-YYYY").endOf('day').toDate();
+
+    console.log("From Date:", from);
+    console.log("To Date:", to);
+
+    // Fetch the user (assuming user is authenticated and userId is in req.user)
+    const user = await User.findById(req.user.id);
+
+    // Fetch GRN records
+    const data = await GRN.find().populate("userId", "name emailAddress");
+
+    // Filter out records with invalid dates and ensure dates are within the range
+    const validData = data.filter(grn => {
+      const dateFormats = ["DD-MM-YYYY", "YYYY-MM-DD"];
+      const grnDate = moment(grn.date, dateFormats, true);
+      return grnDate.isValid() && grnDate.isBetween(from, to, null, '[]');
+    });
+
+    console.log("Fetched Data:", validData);
+
+    if (!validData || validData.length === 0) {
+      return res.status(404).json({ message: "No GRN records found for the given range." });
+    }
+
+    // Define columns for the report
+    const columnsArray = columns
+      ? columns.split(",").map((col) => ({ property: col, label: col, width: 60 }))
+      : [
+          { property: "grnNumber", label: "GRN Number", width: 60 },
+          { property: "date", label: "Date", width: 60 },
+          { property: "supplierChallanNumber", label: "Supplier Challan Number", width: 80 },
+          { property: "supplierChallanDate", label: "Supplier Challan Date", width: 80 },
+          { property: "supplier", label: "Supplier", width: 80 },
+          { property: "inwardNumber", label: "Inward Number", width: 80 },
+          { property: "inwardDate", label: "Inward Date", width: 80 },
+          { property: "remarks", label: "Remarks", width: 80 },
+        ];
+
+    const validSortFields = ["date", "grnNumber", "supplier", "inwardNumber", "remarks"];
+
+    // Prepare data for the PDF report
+    const reportData = validData.map((grn) => ({
+      grnNumber: grn.grnNumber,
+      date: grn.date,
+      supplierChallanNumber: grn.supplierChallanNumber,
+      supplierChallanDate: grn.supplierChallanDate,
+      supplier: grn.supplier,
+      inwardNumber: grn.inwardNumber,
+      inwardDate: grn.inwardDate,
+      remarks: grn.remarks,
+      items: grn.rows,
+    }));
+
+    // Generate the PDF report
+    const report = await generatePdfReport({
+      user,
+      data: reportData,
+      columns: columnsArray,
+      sortBy,
+      order,
+      reportType: "GRN",
+      fromDate,
+      toDate,
+      validSortFields,
+    });
+
+    res.status(200).json({
+      message: "GRN PDF report generated successfully",
+      url: report.url,
+      totals: report.totals,
+    });
+  } catch (error) {
+    console.error("Error:", error.message);
+    res.status(500).json({ message: error.message });
+  }
 };

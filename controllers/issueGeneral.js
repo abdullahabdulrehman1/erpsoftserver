@@ -1,6 +1,9 @@
 import GRN from "../models/GRNGeneral.js";
 import IssueGeneral from "../models/issueGeneral.js";
 import { User } from "../models/user.js";
+import { generatePdfReport } from "../utils/pdfReportUtil.js";
+import { fileURLToPath } from "url";
+import { dirname } from "path";
 
 // Create a new Issue General
 export const createIssueGeneral = async (req, res) => {
@@ -129,6 +132,94 @@ export const getIssueGeneralsByGrnNumber = async (req, res) => {
  
     res.status(200).json(issueGenerals);
   } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = dirname(__filename);
+
+export const generateIssueGeneralReport = async (req, res) => {
+  try {
+    const { fromDate, toDate, sortBy, order, columns } = req.query;
+
+    // Validate and parse inputs
+    if (!fromDate || !toDate) {
+      return res.status(400).json({ message: "Invalid date range" });
+    }
+
+    const from = new Date(fromDate);
+    const to = new Date(toDate);
+
+    // Fetch the user (assuming user is authenticated and userId is in req.user)
+    const user = await User.findById(req.user.id);
+
+    // Fetch issue general records
+    const data = await IssueGeneral.find({
+      userId: user.role === 0 ? user._id : undefined,
+      issueDate: { $gte: from, $lte: to },
+    }).populate("userId", "name emailAddress");
+
+    if (!data || data.length === 0) {
+      return res.status(404).json({ message: "No issue general records found for the given range." });
+    }
+
+    // Define columns for the report
+    const columnsArray = columns
+      ? columns.split(",").map((col) => ({ property: col, label: col, width: 60 }))
+      : [
+          { property: "grnNumber", label: "GRN Number", width: 60 },
+          { property: "issueDate", label: "Issue Date", width: 60 },
+          { property: "store", label: "Store", width: 80 },
+          { property: "requisitionType", label: "Requisition Type", width: 80 },
+          { property: "issueToUnit", label: "Issue To Unit", width: 80 },
+          { property: "demandNo", label: "Demand No", width: 60 },
+          { property: "vehicleType", label: "Vehicle Type", width: 60 },
+          { property: "issueToDepartment", label: "Issue To Department", width: 80 },
+          { property: "vehicleNo", label: "Vehicle No", width: 60 },
+          { property: "driver", label: "Driver", width: 60 },
+          { property: "remarks", label: "Remarks", width: 80 },
+        ];
+
+    const validSortFields = ["issueDate", "grnNumber", "store", "requisitionType", "issueToUnit", "demandNo", "vehicleType", "issueToDepartment", "vehicleNo", "driver", "remarks"];
+
+    // Prepare data for the PDF report
+    const reportData = data.map((issue) => ({
+      grnNumber: issue.grnNumber,
+      issueDate: issue.issueDate.toISOString().split('T')[0],
+      store: issue.store,
+      requisitionType: issue.requisitionType,
+      issueToUnit: issue.issueToUnit,
+      demandNo: issue.demandNo,
+      vehicleType: issue.vehicleType,
+      issueToDepartment: issue.issueToDepartment,
+      vehicleNo: issue.vehicleNo,
+      driver: issue.driver,
+      remarks: issue.remarks,
+      items: issue.rows,
+    }));
+
+    // Generate the PDF report
+    const report = await generatePdfReport({
+      user,
+      data: reportData,
+      columns: columnsArray,
+      sortBy,
+      order,
+      reportType: "Issue General",
+      fromDate,
+      toDate,
+      validSortFields,
+    });
+
+    res.status(200).json({
+      message: "Issue General PDF report generated successfully",
+      url: report.url,
+      totals: report.totals,
+    });
+  } catch (error) {
+    console.error("Error:", error.message);
     res.status(500).json({ message: error.message });
   }
 };

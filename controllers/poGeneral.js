@@ -141,9 +141,17 @@ export const deletePurchaseOrder = async (req, res) => {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
-
 export const editPurchaseOrder = async (req, res) => {
   const { purchaseOrderId, updateData } = req.body;
+
+  if (!purchaseOrderId) {
+    return res.status(400).json({ message: "Purchase Order ID is required" });
+  }
+
+  if (!updateData) {
+    return res.status(400).json({ message: "Update data is required" });
+  }
+
   const {
     userId,
     poNumber,
@@ -163,6 +171,12 @@ export const editPurchaseOrder = async (req, res) => {
     const existingPO = await PurchaseOrder.findById(purchaseOrderId);
     if (!existingPO) {
       return res.status(404).json({ message: "Purchase Order not found" });
+    }
+
+    // Validate userId
+    const user = await User.findById(userId);
+    if (!user) {
+      return res.status(404).json({ message: "User not found" });
     }
 
     // Calculate GST and total amounts for each row
@@ -232,6 +246,7 @@ export const editPurchaseOrder = async (req, res) => {
       message: "Purchase Order updated successfully",
     });
   } catch (error) {
+    console.error("Error updating Purchase Order:", error);
     res.status(500).json({ message: "Server Error", error: error.message });
   }
 };
