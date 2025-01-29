@@ -30,9 +30,9 @@ export const generatePdfReport = async ({
     }
 
     const sortedData = data.sort((a, b) => {
-      if (sortBy === "amount") {
-        const totalA = a.items ? a.items.reduce((sum, item) => sum + item.amount, 0) : a.totalAmount;
-        const totalB = b.items ? b.items.reduce((sum, item) => sum + item.amount, 0) : b.totalAmount;
+      if (sortBy === "amount" ) {
+        const totalA = a.items ? a.items.reduce((sum, item) => sum + item.amount, 0) : a.amount;
+        const totalB = b.items ? b.items.reduce((sum, item) => sum + item.amount, 0) : b.amount;
         return order === "asc" ? totalA - totalB : totalB - totalA;
       } else {
         const valueA = a[sortBy];

@@ -188,10 +188,7 @@ export const editPurchaseOrder = async (req, res) => {
       const discountAmount = row.discountAmount || 0;
 
       // Calculate excludingTaxAmount if not provided
-      let excludingTaxAmount = row.excludingTaxAmount;
-      if (!excludingTaxAmount) {
-        excludingTaxAmount = row.rate * row.quantity;
-      }
+      let excludingTaxAmount = row.rate * row.quantity;
 
       // Ensure excludingTaxAmount is a valid number
       if (isNaN(excludingTaxAmount)) {
@@ -253,7 +250,6 @@ export const editPurchaseOrder = async (req, res) => {
 // Update the import path as per your project structure
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
 export const generatePurchaseOrderReport = async (req, res) => {
   try {
     const { fromDate, toDate, sortBy, order, columns } = req.query;
@@ -269,11 +265,18 @@ export const generatePurchaseOrderReport = async (req, res) => {
     // Fetch the user (assuming user is authenticated and userId is in req.user)
     const user = await User.findById(req.user.id);
 
-    // Fetch purchase orders
+    // Validate sorting parameters
+    const validSortFields = ["date", "poNumber", "supplier", "store", "requisitionType", "quantity", "amount", "totalAmount"];
+    const sortField = validSortFields.includes(sortBy) ? sortBy : "date";
+    const sortOrder = order === "desc" ? -1 : 1;
+
+    // Fetch purchase orders with sorting
     const data = await PurchaseOrder.find({
       userId: user.role === 0 ? user._id : undefined,
       date: { $gte: from, $lte: to },
-    }).populate("userId", "name emailAddress");
+    })
+      .populate("userId", "name emailAddress")
+      .sort({ [sortField]: sortOrder });
 
     if (!data || data.length === 0) {
       return res.status(404).json({ message: "No purchase orders found for the given range." });
@@ -294,7 +297,6 @@ export const generatePurchaseOrderReport = async (req, res) => {
           { property: "amount", label: "Total Amount", width: 80 },
         ];
 
-        const validSortFields = ["date", "poNumber", "supplier", "store", "requisitionType", "quantity","amount", "totalAmount"];
     // Prepare data for the PDF report
     const reportData = data.map((po) => ({
       poNumber: po.poNumber,
@@ -320,7 +322,6 @@ export const generatePurchaseOrderReport = async (req, res) => {
     });
 
     // Generate URL for the report
-
     res.status(200).json({
       message: "Purchase Order PDF report generated successfully",
       url: report.url,

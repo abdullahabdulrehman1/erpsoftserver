@@ -26,7 +26,7 @@ app.delete("/deletePO", deletePurchaseOrder);
 app.put(
   "/editPurchaseOrder",
   
-  validatorHandler,
+  
   editPurchaseOrder
 );
 app.get("/generatePdfReport",generatePurchaseOrderReport)

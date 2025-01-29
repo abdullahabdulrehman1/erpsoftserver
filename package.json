@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "main": "server.js",
   "type": "module",
-  "scripts": {
-    "start": "nodemon server.js",
-    "dev": "nodemon server.js"
-  },
+   
+    "scripts": {
+      "start": "concurrently \"nodemon server.js\" \"gh codespace ports visibility PORT_NUMBER:public --wait\""
+      ,"dev": "concurrently \"nodemon server.js\" \"gh codespace ports visibility PORT_NUMBER:public --wait\""
+    },
+  
   "keywords": [],
   "author": "",
   "license": "ISC",
@@ -30,5 +32,8 @@
     "pdfkit": "^0.16.0",
     "pdfkit-table": "^0.1.69",
     "uuid": "^11.0.3"
+  },
+  "devDependencies": {
+    "concurrently": "^9.1.2"
   }
 }
