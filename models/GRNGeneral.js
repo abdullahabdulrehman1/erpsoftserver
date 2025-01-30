@@ -1,6 +1,6 @@
-import mongoose from "mongoose";
+import mongoose from 'mongoose'
 
-const { Schema } = mongoose;
+const { Schema } = mongoose
 
 // Define the schema for the rows
 const rowSchema = new Schema({
@@ -13,8 +13,8 @@ const rowSchema = new Schema({
   previousQty: { type: Number, required: true },
   balancePoQty: { type: Number, required: true },
   receivedQty: { type: Number, required: true },
-  rowRemarks: { type: String, maxlength: 150 },
-});
+  rowRemarks: { type: String, maxlength: 150 }
+})
 
 // Define the schema for the GRN
 const grnSchema = new Schema(
@@ -31,14 +31,14 @@ const grnSchema = new Schema(
 
     userId: {
       type: mongoose.Schema.Types.ObjectId,
-      ref: "User",
-      required: true,
-    },
+      ref: 'User',
+      required: true
+    }
   },
   { timestamps: true }
-);
+)
 
 // Create the model
-const GRN = mongoose.model("GRN", grnSchema);
+const GRN = mongoose.model('GRN', grnSchema)
 
-export default GRN;
+export default GRN
