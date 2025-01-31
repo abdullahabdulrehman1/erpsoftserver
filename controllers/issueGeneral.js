@@ -73,7 +73,8 @@ export const updateIssueGeneral = async (req, res) => {
 
     const updatedIssueGeneral = await IssueGeneral.findByIdAndUpdate(
       id,
-      { ...updateData }, // Spread the updateData object to update the fields correctly
+      
+      {userId: req.user.id, ...updateData }, // Spread the updateData object to update the fields correctly
       { new: true }
     );
 
@@ -182,7 +183,7 @@ export const generateIssueGeneralReport = async (req, res) => {
           { property: "remarks", label: "Remarks", width: 80 },
         ];
 
-    const validSortFields = ["issueDate", "grnNumber", "store", "requisitionType", "issueToUnit", "demandNo", "vehicleType", "issueToDepartment", "vehicleNo", "driver", "remarks"];
+    const validSortFields = ["issueDate", "grnNumber","grnQty", "store", "requisitionType", "issueToUnit", "demandNo", "vehicleType", "issueToDepartment", "vehicleNo", "driver", "remarks"];
 
     // Prepare data for the PDF report
     const reportData = data.map((issue) => ({

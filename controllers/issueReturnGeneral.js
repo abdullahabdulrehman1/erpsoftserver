@@ -147,6 +147,7 @@ export const generateIssueReturnGeneralReport = async (req, res) => {
         ]
     const validSortFields = [
       'irDate',
+      'drDate',
       'irNumber',
       'drNumber',
       'issueQty',
