@@ -5,7 +5,7 @@
   "type": "module",
    
     "scripts": {
-      "start": "concurrently \"nodemon server.js\" \"gh codespace ports visibility PORT_NUMBER:public --wait\""
+      "start": "node server.js"
       ,"dev": "concurrently \"nodemon server.js\" \"gh codespace ports visibility PORT_NUMBER:public --wait\""
     },
   
