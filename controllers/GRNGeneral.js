@@ -151,7 +151,8 @@ export const getGRNById = async (req, res) => {
     if (userRole === 1 || userRole === 2) {
       grns = await GRN.find().populate('userId', 'name')
     } else if (userRole === 0) {
-      grns = await GRN.find({ userId }).populate('userId', 'name')
+      // grns = await GRN.find({ userId }).populate('userId', 'name')
+      grns = await GRN.find().populate('userId', 'name')
     } else {
       return res.status(403).json({ message: 'Unauthorized access' })
     }

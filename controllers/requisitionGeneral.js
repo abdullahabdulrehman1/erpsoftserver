@@ -1,15 +1,9 @@
-import { Requisition } from '../models/requisitionGeneral.js'
 import { validationResult } from 'express-validator'
-import { User } from '../models/user.js'
-import PDFDocument from 'pdfkit'
-import moment from 'moment'
-import fs from 'fs'
-import path from 'path'
-import { fileURLToPath } from 'url'
 import { dirname } from 'path'
-import pdfTable from 'pdfkit-table'
-import { v2 as cloudinary } from 'cloudinary'
-import axios from 'axios'
+import { fileURLToPath } from 'url'
+import { Requisition } from '../models/requisitionGeneral.js'
+import { User } from '../models/user.js'
+
 import { generatePdfReport } from '../utils/pdfReportUtil.js'
 
 export const createRequisition = async (req, res) => {
@@ -82,7 +76,8 @@ export const showRequisition = async (req, res) => {
         .limit(limit)
     } else if (userRole === 0) {
       totalRecords = await Requisition.countDocuments({ userId })
-      requisitions = await Requisition.find({ userId })
+      // requisitions = await Requisition.find({ userId })
+      requisitions = await Requisition.find()
         .populate('userId', 'name email')
         .skip(skip)
         .limit(limit)

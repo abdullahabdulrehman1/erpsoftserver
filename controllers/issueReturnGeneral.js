@@ -53,7 +53,8 @@ export const getIssueReturnGeneralIdsByUserId = async (req, res) => {
       issueReturnGenerals = await IssueReturnGeneral.find({})
     } else if (userRole === 0) {
       // Normal user can view only their own Issue Return Generals
-      issueReturnGenerals = await IssueReturnGeneral.find({ userId })
+      // issueReturnGenerals = await IssueReturnGeneral.find({ userId })
+      issueReturnGenerals = await IssueReturnGeneral.find({  })
     } else {
       return res.status(403).json({ message: 'Unauthorized access' })
     }

@@ -57,7 +57,8 @@ export const getGRNReturnsByUserId = async (req, res) => {
     if (userRole === 1 || userRole === 2) {
       grnReturns = await GRNReturnGeneral.find({})
     } else if (userRole === 0) {
-      grnReturns = await GRNReturnGeneral.find({ userId })
+      // grnReturns = await GRNReturnGeneral.find({ userId })
+      grnReturns = await GRNReturnGeneral.find()
     } else {
       return res.status(403).json({ message: 'Unauthorized access' })
     }

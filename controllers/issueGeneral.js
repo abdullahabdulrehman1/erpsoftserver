@@ -122,7 +122,8 @@ export const getIssueGeneralsByGrnNumber = async (req, res) => {
       );
     } else if (userRole === 0) {
       // Normal user can view only their own Issue Generals
-      issueGenerals = await IssueGeneral.find({ userId }).populate(
+      // issueGenerals = await IssueGeneral.find({ userId }).populate(
+      issueGenerals = await IssueGeneral.find({  }).populate(
         "userId",
         "name emailAddress"
       );

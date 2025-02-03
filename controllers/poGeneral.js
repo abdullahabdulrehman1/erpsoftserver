@@ -112,7 +112,8 @@ export const showPurchaseOrders = async (req, res) => {
         "name email"
       );
     } else if (userRole === 0) {
-      purchaseOrders = await PurchaseOrder.find({ userId }).populate(
+      // purchaseOrders = await PurchaseOrder.find({ userId }).populate(
+      purchaseOrders = await PurchaseOrder.find().populate(
         "userId",
         "name email"
       );
