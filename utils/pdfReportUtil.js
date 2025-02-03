@@ -1,15 +1,13 @@
 import { v2 as cloudinary } from "cloudinary";
 import fs from "fs";
 import moment from "moment";
-import path, { dirname } from "path";
+import path from "path";
 import pdfTable from "pdfkit-table";
 import { pipeline } from "stream";
-import { fileURLToPath } from "url";
 import { promisify } from "util";
-const streamPipeline = promisify(pipeline);
+import os from "os";
 
-const __filename = fileURLToPath(import.meta.url);
-const __dirname = dirname(__filename);
+const streamPipeline = promisify(pipeline);
 
 export const generatePdfReport = async ({
   user,
@@ -29,25 +27,19 @@ export const generatePdfReport = async ({
     }
 
     const sortedData = data.sort((a, b) => {
-      if (sortBy === "amount" ) {
+      if (sortBy === "amount") {
         const totalA = a.items ? a.items.reduce((sum, item) => sum + item.amount, 0) : a.amount;
         const totalB = b.items ? b.items.reduce((sum, item) => sum + item.amount, 0) : b.amount;
         return order === "asc" ? totalA - totalB : totalB - totalA;
       } else {
         const valueA = a[sortBy];
         const valueB = b[sortBy];
-        return order === "asc"
-          ? valueA > valueB
-            ? 1
-            : -1
-          : valueA < valueB
-          ? 1
-          : -1;
+        return order === "asc" ? (valueA > valueB ? 1 : -1) : valueA < valueB ? 1 : -1;
       }
     });
 
     // Define directories and file names
-    const reportsDir = path.join(__dirname, "reports");
+    const reportsDir = path.join(os.tmpdir(), "reports");
     if (!fs.existsSync(reportsDir)) {
       fs.mkdirSync(reportsDir, { recursive: true });
     }
