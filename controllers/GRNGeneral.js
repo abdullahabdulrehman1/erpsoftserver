@@ -287,57 +287,57 @@ const __dirname = dirname(__filename)
 
 export const generateGRNReport = async (req, res) => {
   try {
-    const { fromDate, toDate, sortBy, order, columns } = req.query
+    const { fromDate, toDate, sortBy, order, columns } = req.query;
 
     // Validate and parse inputs
     if (!fromDate || !toDate) {
-      return res
-        .status(400)
-        .json({ message: 'From date and to date are required' })
+      return res.status(400).json({ message: 'From date and to date are required' });
     }
 
-    const from = moment(fromDate).startOf('day').toISOString()
-    const to = moment(toDate).endOf('day').toISOString()
+    const from = moment(fromDate).startOf('day').toISOString();
+    const to = moment(toDate).endOf('day').toISOString();
 
     // Fetch the user (assuming user is authenticated and userId is in req.user)
-    const user = await User.findById(req.user.id)
+    const user = await User.findById(req.user.id);
 
     // Fetch GRN records
-    const data = await GRN.find({
-      userId: user.role === 0 ? user._id : undefined,
+    const query = {
       date: { $gte: from, $lte: to }
-    }).populate('userId', 'name emailAddress')
+    };
+
+    if (user.role === 0) {
+      query.userId = user._id;
+    } else if (user.role === 1) {
+      delete query.userId; // Fetch all records if user role is 1
+    }
+
+    const data = await GRN.find(query)
+      .populate('userId', 'name emailAddress');
 
     if (!data || data.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'No GRN records found for the specified date range' })
+      return res.status(404).json({ message: 'No GRN records found for the specified date range' });
     }
 
     // Format the dates in the data
     const formattedData = data.map(record => ({
       ...record._doc,
       date: moment(record.date).format('YYYY-MM-DD'),
-      supplierChallanDate: moment(record.supplierChallanDate).format(
-        'YYYY-MM-DD'
-      ),
+      supplierChallanDate: moment(record.supplierChallanDate).format('YYYY-MM-DD'),
       inwardDate: moment(record.inwardDate).format('YYYY-MM-DD')
-    }))
+    }));
 
     // Define columns for the report
     const columnsArray = columns
-      ? columns
-          .split(',')
-          .map(col => ({ property: col, label: col, width: 60 }))
+      ? columns.split(',').map(col => ({ property: col, label: col, width: 60 }))
       : [
           { property: 'grnNumber', label: 'GRN Number', width: 60 },
           { property: 'date', label: 'Date', width: 60 },
           { property: 'supplier', label: 'Supplier', width: 80 },
           { property: 'inwardNumber', label: 'Inward Number', width: 60 },
           { property: 'remarks', label: 'Remarks', width: 80 }
-        ]
+        ];
 
-    const validSortFields = ['date', 'grnNumber', 'supplier', 'inwardNumber']
+    const validSortFields = ['date', 'grnNumber', 'supplier', 'inwardNumber'];
 
     // Generate the PDF report
     const report = await generatePdfReport({
@@ -350,13 +350,11 @@ export const generateGRNReport = async (req, res) => {
       fromDate,
       toDate,
       validSortFields
-    })
+    });
 
-    res
-      .status(200)
-      .json({ message: 'Report generated successfully', reportUrl: report.url })
+    res.status(200).json({ message: 'Report generated successfully', reportUrl: report.url });
   } catch (error) {
-    console.error('Error generating GRN report:', error)
-    res.status(500).json({ message: 'Server error', error: error.message })
+    console.error('Error generating GRN report:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-}
+};

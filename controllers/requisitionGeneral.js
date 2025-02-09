@@ -203,10 +203,15 @@ export const generateRequisitionReport = async (req, res) => {
     const to = new Date(toDate)
     const user = await User.findById(req.user.id)
 
-    const data = await Requisition.find({
-      userId: user.role === 0 ? user._id : undefined,
+        const query = {
       date: { $gte: from, $lte: to }
-    }).populate('userId', 'name emailAddress')
+    };
+    
+    if (user.role === 0) {
+      query.userId = user._id;
+    }
+    
+    const data = await Requisition.find(query).populate('userId', 'name emailAddress');
 
     if (!data || data.length === 0) {
       return res

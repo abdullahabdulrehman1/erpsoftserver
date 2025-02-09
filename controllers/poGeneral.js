@@ -103,25 +103,36 @@ export const showPurchaseOrders = async (req, res) => {
     const userId = req.user.id;
     const user = await User.findById(userId);
     const userRole = user?.role; // Assuming role is stored in user.role
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
 
     let purchaseOrders;
+    let totalRecords;
 
     if (userRole === 1 || userRole === 2) {
-      purchaseOrders = await PurchaseOrder.find().populate(
-        "userId",
-        "name email"
-      );
+      totalRecords = await PurchaseOrder.countDocuments();
+      purchaseOrders = await PurchaseOrder.find()
+        .populate("userId", "name email")
+        .skip(skip)
+        .limit(limit);
     } else if (userRole === 0) {
-      // purchaseOrders = await PurchaseOrder.find({ userId }).populate(
-      purchaseOrders = await PurchaseOrder.find().populate(
-        "userId",
-        "name email"
-      );
+      totalRecords = await PurchaseOrder.countDocuments({ userId });
+      purchaseOrders = await PurchaseOrder.find({ userId })
+        .populate("userId", "name email")
+        .skip(skip)
+        .limit(limit);
     } else {
       return res.status(403).json({ message: "Unauthorized access" });
     }
+    const totalPages = totalRecords > 0 ? Math.ceil(totalRecords / limit) : 1;
 
-    res.status(200).json(purchaseOrders);
+    res.status(200).json({
+      data: purchaseOrders,
+      totalRecords,
+      currentPage: page,
+      totalPages,
+    });
   } catch (error) {
     res.status(500).json({ message: "Server Error", error: error.message });
   }
@@ -272,10 +283,17 @@ export const generatePurchaseOrderReport = async (req, res) => {
     const sortOrder = order === "desc" ? -1 : 1;
 
     // Fetch purchase orders with sorting
-    const data = await PurchaseOrder.find({
-      userId: user.role === 0 ? user._id : undefined,
-      date: { $gte: from, $lte: to },
-    })
+    const query = {
+      date: { $gte: from, $lte: to }
+    };
+
+    if (user.role === 0) {
+      query.userId = user._id;
+    } else if (user.role === 1) {
+      delete query.userId; // Fetch all records if user role is 1
+    }
+
+    const data = await PurchaseOrder.find(query)
       .populate("userId", "name emailAddress")
       .sort({ [sortField]: sortOrder });
 
