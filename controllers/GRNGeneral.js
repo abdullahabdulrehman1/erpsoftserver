@@ -51,6 +51,11 @@ export const createGRN = async (req, res) => {
       .json({ message: 'Invalid date format. Use DD-MM-YYYY.' })
   }
 
+  // Convert date strings to Date objects
+  const parsedDate = moment(date, 'DD-MM-YYYY').toDate()
+  const parsedSupplierChallanDate = moment(supplierChallanDate, 'DD-MM-YYYY').toDate()
+  const parsedInwardDate = moment(inwardDate, 'DD-MM-YYYY').toDate()
+
   // Validate rows
   for (let row of rows) {
     if (
@@ -88,26 +93,6 @@ export const createGRN = async (req, res) => {
       poNumber: { $in: poNumbers }
     })
 
-    // Validate that the number of rows in GRN does not exceed the number of rows in the corresponding PO
-    for (let po of existingPOs) {
-      const poRowCount = po.rows.length
-      const grnRowCount = rows.filter(row => row.poNo === po.poNumber).length
-      if (grnRowCount > poRowCount) {
-        return res.status(400).json({
-          message: `GRN cannot have more rows than the corresponding PO (PO Number: ${po.poNumber})`
-        })
-      }
-
-      // Check for missing rows in the existing GRN
-      const existingGRNRows = await GRN.find({ 'rows.poNo': po.poNumber })
-      const existingGRNRowCount = existingGRNRows.length
-      if (existingGRNRowCount + grnRowCount > poRowCount) {
-        return res.status(400).json({
-          message: `Cannot add more rows than the total number of rows in the corresponding PO (PO Number: ${po.poNumber})`
-        })
-      }
-    }
-
     // Fetch user details
     const user = await User.findById(userId)
     if (!user) {
@@ -116,12 +101,12 @@ export const createGRN = async (req, res) => {
 
     const newGRN = new GRN({
       grnNumber,
-      date,
+      date: parsedDate,
       supplierChallanNumber,
-      supplierChallanDate,
+      supplierChallanDate: parsedSupplierChallanDate,
       supplier,
       inwardNumber,
-      inwardDate,
+      inwardDate: parsedInwardDate,
       remarks,
       rows,
       userId
@@ -139,38 +124,59 @@ export const createGRN = async (req, res) => {
   }
 }
 export const getGRNById = async (req, res) => {
-  const userId = req.user.id
+  const userId = req.user.id;
 
   try {
-    // Fetch the GRN details by ID
-    const user = await User.findById(userId)
-    const userRole = user?.role // Assuming role is stored in user.role
+    // Fetch the user details
+    const user = await User.findById(userId);
+    const userRole = user?.role; // Assuming role is stored in user.role
 
-    let grns
+    // Pagination parameters
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+    const skip = (page - 1) * limit;
+
+    let grns;
+    let totalRecords;
 
     if (userRole === 1 || userRole === 2) {
-      grns = await GRN.find().populate('userId', 'name')
+      // Admin can view all GRNs
+      totalRecords = await GRN.countDocuments();
+      grns = await GRN.find()
+        .populate('userId', 'name')
+        .skip(skip)
+        .limit(limit);
     } else if (userRole === 0) {
-      // grns = await GRN.find({ userId }).populate('userId', 'name')
-      grns = await GRN.find().populate('userId', 'name')
+      // Normal user can view only their own GRNs
+      totalRecords = await GRN.countDocuments({ userId });
+      grns = await GRN.find({ userId })
+        .populate('userId', 'name')
+        .skip(skip)
+        .limit(limit);
     } else {
-      return res.status(403).json({ message: 'Unauthorized access' })
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
-    if (!grns) {
-      return res.status(404).json({ message: 'GRN not found' })
+
+    if (!grns || grns.length === 0) {
+      return res.status(404).json({ message: 'GRN not found' });
     }
+
+    const totalPages = totalRecords > 0 ? Math.ceil(totalRecords / limit) : 1;
 
     res.status(200).json({
       message: 'GRN fetched successfully',
-      grn: grns
-    })
+      data: grns,
+      totalRecords,
+      currentPage: page,
+      totalPages,
+    });
   } catch (error) {
-    console.error('Error fetching GRN:', error)
-    res.status(500).json({ message: 'Server error', error: error.message })
+    console.error('Error fetching GRN:', error);
+    res.status(500).json({ message: 'Server error', error: error.message });
   }
-}
+};
 export const deleteGRN = async (req, res) => {
-  const { grnId } = req.body
+  const { grnId } = req.params
 
   if (!grnId) {
     return res.status(400).json({ message: 'GRN ID is required' })
@@ -307,8 +313,9 @@ export const generateGRNReport = async (req, res) => {
 
     if (user.role === 0) {
       query.userId = user._id;
-    } else if (user.role === 1) {
-      delete query.userId; // Fetch all records if user role is 1
+    } else if (user.role === 1 || user.role === 2) {
+      // Admin roles (1 or 2) can view all records
+      delete query.userId;
     }
 
     const data = await GRN.find(query)

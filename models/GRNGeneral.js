@@ -1,9 +1,6 @@
 import mongoose from 'mongoose'
 
-const { Schema } = mongoose
-
-// Define the schema for the rows
-const rowSchema = new Schema({
+const rowSchema = new mongoose.Schema({
   poNo: { type: String, required: true },
   department: { type: String, required: true },
   category: { type: String, required: true },
@@ -13,22 +10,20 @@ const rowSchema = new Schema({
   previousQty: { type: Number, required: true },
   balancePoQty: { type: Number, required: true },
   receivedQty: { type: Number, required: true },
-  rowRemarks: { type: String, maxlength: 150 }
+  rowRemarks: { type: String }
 })
 
-// Define the schema for the GRN
-const grnSchema = new Schema(
+const grnSchema = new mongoose.Schema(
   {
-    grnNumber: { type: String, required: true },
-    date: { type: String, required: true },
+    grnNumber: { type: String, required: true, unique: true },
+    date: { type: Date, required: true },
     supplierChallanNumber: { type: String, required: true },
-    supplierChallanDate: { type: String, required: true },
+    supplierChallanDate: { type: Date, required: true },
     supplier: { type: String, required: true },
     inwardNumber: { type: String, required: true },
-    inwardDate: { type: String, required: true },
+    inwardDate: { type: Date, required: true },
     remarks: { type: String, required: true },
     rows: [rowSchema],
-
     userId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: 'User',
