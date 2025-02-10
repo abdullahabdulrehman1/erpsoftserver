@@ -49,6 +49,10 @@ const poItemSchema = new mongoose.Schema({
     type: Number,
     required: true,
   },
+  requisition:{
+    type: String,
+    required: false,
+  },
   totalAmount: {
     type: Number,
     required: true,
