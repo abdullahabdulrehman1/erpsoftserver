@@ -39,31 +39,46 @@ export const createIssueReturnGeneral = async (req, res) => {
 
 // Controller to get all IssueReturnGeneral IDs by userId
 
+
 export const getIssueReturnGeneralIdsByUserId = async (req, res) => {
-  const userId = req.user.id
+  const userId = req.user.id;
+  const { page = 1, limit = 10 } = req.query; // Default to page 1 and limit 10 if not provided
 
   try {
-    const user = await User.findById(userId)
-    const userRole = user?.role // Assuming role is stored in user.role
+    const user = await User.findById(userId);
+    const userRole = user?.role; // Assuming role is stored in user.role
 
-    let issueReturnGenerals
+    let issueReturnGenerals;
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10);
+    const options = {
+      skip,
+      limit: parseInt(limit, 10),
+      sort: { createdAt: -1 } // Sort by creation date, newest first
+    };
 
     if (userRole === 1 || userRole === 2) {
       // Admin or role 2 can view all Issue Return Generals
-      issueReturnGenerals = await IssueReturnGeneral.find({})
+      issueReturnGenerals = await IssueReturnGeneral.find({}, null, options);
     } else if (userRole === 0) {
       // Normal user can view only their own Issue Return Generals
-      // issueReturnGenerals = await IssueReturnGeneral.find({ userId })
-      issueReturnGenerals = await IssueReturnGeneral.find({  })
+      issueReturnGenerals = await IssueReturnGeneral.find({  }, null, options);
     } else {
-      return res.status(403).json({ message: 'Unauthorized access' })
+      return res.status(403).json({ message: 'Unauthorized access' });
     }
 
-    res.status(200).json(issueReturnGenerals)
+    // Get the total count for pagination metadata
+    const totalCount = await IssueReturnGeneral.countDocuments(userRole === 1 || userRole === 2 ? {} : { userId });
+
+    res.status(200).json({
+      data: issueReturnGenerals,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    });
   } catch (error) {
-    res.status(500).json({ message: error.message })
+    res.status(500).json({ message: error.message });
   }
-}
+};
 // Controller to update an IssueReturnGeneral by ID
 export const updateIssueReturnGeneral = async (req, res) => {
   const updateData = req.body

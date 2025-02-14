@@ -1,7 +1,7 @@
 import mongoose from 'mongoose'
 
 const rowSchema = new mongoose.Schema({
-  poNo: { type: String, required: true },
+  poNo: { type: String, required: false },
   department: { type: String, required: true },
   category: { type: String, required: true },
   name: { type: String, required: true },

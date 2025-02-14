@@ -12,7 +12,7 @@ import { createGRNValidator, validatorHandler } from '../libs/validator.js'
 const app = express()
 
 app.use(isAuthenticated)
-app.post('/createGRN', createGRNValidator(), validatorHandler, createGRN)
+app.post('/createGRN', createGRN)
 app.get('/get-grn', getGRNById)
 app.delete('/delete-grn/:grnId', deleteGRN)
 app.put('/update-grn', updateGRN)

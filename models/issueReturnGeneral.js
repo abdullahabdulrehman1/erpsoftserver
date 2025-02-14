@@ -22,7 +22,7 @@ const issueReturnGeneralSchema = new Schema(
       ref: "User",
       required: true,
     },
-    irNumber: { type: String, required: true },
+    irNumber: { type: String, required: false },
     irDate: { type: Date, required: true },
     drNumber: { type: String, required: true },
     drDate: { type: Date, required: true },

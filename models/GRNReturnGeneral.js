@@ -18,9 +18,9 @@ const rowSchema = new Schema({
 const grnReturnGeneralSchema = new Schema(
   {
     grnrNumber: { type: String, required: true },
-    grnrDate: { type: String, required: true },
-    grnNumber: { type: String, required: true, ref: "GRN" },
-    grnDate: { type: String, required: true },
+    grnrDate: { type: Date, required: true },
+    grnNumber: { type: String, required: false, ref: "GRN" },
+    grnDate: { type: Date, required: true },
     remarks: { type: String, required: true },
     rows: [rowSchema],
     userId: {
