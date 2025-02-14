@@ -1,9 +1,9 @@
 import { PurchaseOrder } from '../models/poGeneral.js'
 import { User } from '../models/user.js'
 
-import { generatePdfReport } from '../utils/pdfReportUtil.js'
-import { fileURLToPath } from 'url'
 import { dirname } from 'path'
+import { fileURLToPath } from 'url'
+import { generatePdfReport } from '../utils/pdfReportUtil.js'
 
 export const createPurchaseOrder = async (req, res) => {
   const {
@@ -362,5 +362,42 @@ export const generatePurchaseOrderReport = async (req, res) => {
   } catch (error) {
     console.error('Error:', error.message)
     res.status(500).json({ message: error.message })
+  }
+}
+export const searchPurchaseOrder = async (req, res) => {
+  const { poNumber, page = 1, limit = 10 } = req.query
+
+  if (!poNumber) {
+    return res.status(400).json({ message: 'PO Number is required' })
+  }
+
+  try {
+    // Use a regular expression to perform a case-insensitive search
+    const regex = new RegExp(poNumber, 'i')
+
+    // Calculate the number of documents to skip
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10)
+
+    // Find purchase orders with pagination
+    const purchaseOrders = await PurchaseOrder.find({ poNumber: { $regex: regex } })
+      .populate('userId', 'name email')
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+
+    // Get the total count of matching documents
+    const totalCount = await PurchaseOrder.countDocuments({ poNumber: { $regex: regex } })
+
+    if (purchaseOrders.length === 0) {
+      return res.status(404).json({ message: 'No purchase orders found with the provided PO Number' })
+    }
+
+    res.status(200).json({
+      data: purchaseOrders,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message })
   }
 }

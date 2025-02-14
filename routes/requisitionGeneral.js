@@ -34,5 +34,6 @@ app.put(
 );
 // app.get("/showRequisition", searchRequisitionByDrNumber);
 app.get("/generatePdfReport", generateRequisitionReport);
+app.get("/searchRequisitionByDrNumber", searchRequisitionByDrNumber);
 
 export default app;

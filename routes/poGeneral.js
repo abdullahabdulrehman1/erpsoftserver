@@ -5,6 +5,7 @@ import {
   deletePurchaseOrder,
   editPurchaseOrder,
   generatePurchaseOrderReport,
+  searchPurchaseOrder,
   showPurchaseOrders,
 } from "../controllers/poGeneral.js";
 import {
@@ -30,4 +31,6 @@ app.put(
   editPurchaseOrder
 );
 app.get("/generatePdfReport",generatePurchaseOrderReport)
+app.get("/searchPO", searchPurchaseOrder); // Add this line for search route
+
 export default app;

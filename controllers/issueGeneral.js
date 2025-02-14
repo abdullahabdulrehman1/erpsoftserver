@@ -1,9 +1,9 @@
+import { dirname } from 'path'
+import { fileURLToPath } from 'url'
 import GRN from '../models/GRNGeneral.js'
 import IssueGeneral from '../models/issueGeneral.js'
 import { User } from '../models/user.js'
 import { generatePdfReport } from '../utils/pdfReportUtil.js'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
 
 // Create a new Issue General
 export const createIssueGeneral = async (req, res) => {
@@ -12,6 +12,7 @@ export const createIssueGeneral = async (req, res) => {
     grnNumber,
     issueDate,
     store,
+    issueNumber,
     requisitionType,
     issueToUnit,
     demandNo,
@@ -36,10 +37,19 @@ export const createIssueGeneral = async (req, res) => {
         return res.status(404).json({ message: 'GRN number not found' })
       }
     }
+    if(issueNumber){
+      const issue = await IssueGeneral
+      .findOne
+      ({issueNumber})
+      if(issue){
+        return res.status(400).json({message: 'Issue Number already exists'})
+      }
+    }
 
     const newIssueGeneral = new IssueGeneral({
       userId,
       grnNumber,
+      issueNumber,
       issueDate,
       store,
       requisitionType,
@@ -74,6 +84,8 @@ export const updateIssueGeneral = async (req, res) => {
         return res.status(404).json({ message: 'GRN number not found' })
       }
     }
+ 
+
 
     const updatedIssueGeneral = await IssueGeneral.findByIdAndUpdate(
       id,
@@ -256,5 +268,51 @@ export const generateIssueGeneralReport = async (req, res) => {
   } catch (error) {
     console.error('Error:', error.message)
     res.status(500).json({ message: error.message })
+  }
+}
+
+
+
+
+
+
+
+export const searchIssueGeneral = async (req, res) => {
+  const { issueNumber, page = 1, limit = 10 } = req.query
+
+  if (!issueNumber) {
+    return res.status(400).json({ message: 'Issue Number is required' })
+  }
+
+  try {
+    // Create a search query object
+    const searchQuery = {
+      issueNumber: { $regex: new RegExp(issueNumber, 'i') }
+    }
+
+    // Calculate the number of documents to skip
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10)
+
+    // Find Issue Generals with pagination
+    const issues = await IssueGeneral.find(searchQuery)
+      .populate('userId', 'name email')
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+
+    // Get the total count of matching documents
+    const totalCount = await IssueGeneral.countDocuments(searchQuery)
+
+    if (issues.length === 0) {
+      return res.status(404).json({ message: 'No Issue Generals found with the provided criteria' })
+    }
+
+    res.status(200).json({
+      data: issues,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message })
   }
 }

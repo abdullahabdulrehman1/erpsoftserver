@@ -1,10 +1,8 @@
+import moment from 'moment'
 import GRN from '../models/GRNGeneral.js'
 import { PurchaseOrder } from '../models/poGeneral.js'
 import { User } from '../models/user.js'
 import { generatePdfReport } from '../utils/pdfReportUtil.js'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
-import moment from 'moment'
 export const createGRN = async (req, res) => {
   const {
     grnNumber,
@@ -305,8 +303,6 @@ const isValidPONumber = poNumber => {
   return true // Placeholder, replace with actual validation logic
 }
 
-const __filename = fileURLToPath(import.meta.url)
-const __dirname = dirname(__filename)
 
 export const generateGRNReport = async (req, res) => {
   try {
@@ -389,5 +385,43 @@ export const generateGRNReport = async (req, res) => {
   } catch (error) {
     console.error('Error generating GRN report:', error)
     res.status(500).json({ message: 'Server error', error: error.message })
+  }
+}
+
+export const searchGRN = async (req, res) => {
+  const { grnNumber, page = 1, limit = 10 } = req.query
+
+  if (!grnNumber) {
+    return res.status(400).json({ message: 'GRN Number is required' })
+  }
+
+  try {
+    // Use a regular expression to perform a case-insensitive search
+    const regex = new RegExp(grnNumber, 'i')
+
+    // Calculate the number of documents to skip
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10)
+
+    // Find GRNs with pagination
+    const grns = await GRN.find({ grnNumber: { $regex: regex } })
+      .populate('userId', 'name email')
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+
+    // Get the total count of matching documents
+    const totalCount = await GRN.countDocuments({ grnNumber: { $regex: regex } })
+
+    if (grns.length === 0) {
+      return res.status(404).json({ message: 'No GRNs found with the provided GRN Number' })
+    }
+
+    res.status(200).json({
+      data: grns,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message })
   }
 }

@@ -1,7 +1,7 @@
 import IssueReturnGeneral from '../models/issueReturnGeneral.js'
 import { User } from '../models/user.js'
 import { generatePdfReport } from '../utils/pdfReportUtil.js'
-
+import mongoose from 'mongoose'
 // Controller to create a new IssueReturnGeneral
 export const createIssueReturnGeneral = async (req, res) => {
   const userId = req.user.id
@@ -200,5 +200,46 @@ export const generateIssueReturnGeneralReport = async (req, res) => {
   } catch (error) {
     console.error('Error:', error.message)
     res.status(500).json({ message: error.message })
+  }
+}
+
+
+export const searchIssueReturnGeneral = async (req, res) => {
+  const { irNumber, page = 1, limit = 10 } = req.query
+
+  if (!irNumber) {
+    return res.status(400).json({ message: 'IR Number is required' })
+  }
+
+  try {
+    // Create a search query object
+    const searchQuery = {
+      irNumber: { $regex: new RegExp(irNumber, 'i') }
+    }
+
+    // Calculate the number of documents to skip
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10)
+
+    // Find Issue Return Generals with pagination
+    const issueReturns = await IssueReturnGeneral.find(searchQuery)
+      .populate('userId', 'name email')
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+
+    // Get the total count of matching documents
+    const totalCount = await IssueReturnGeneral.countDocuments(searchQuery)
+
+    if (issueReturns.length === 0) {
+      return res.status(404).json({ message: 'No Issue Return Generals found with the provided IR Number' })
+    }
+
+    res.status(200).json({
+      data: issueReturns,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message })
   }
 }

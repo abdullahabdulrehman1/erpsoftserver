@@ -164,25 +164,38 @@ export const updateRequisition = async (req, res) => {
   }
 }
 export const searchRequisitionByDrNumber = async (req, res) => {
-  const { drNumber } = req.query
+  const { drNumber, page = 1, limit = 10 } = req.query
 
   if (!drNumber) {
     return res.status(400).json({ message: 'DR Number is required' })
   }
 
   try {
-    const requisitions = await Requisition.find({ drNumber }).populate(
-      'userId',
-      'name email'
-    )
+    // Use a regular expression to perform a case-insensitive search
+    const regex = new RegExp(drNumber, 'i')
+
+    // Calculate the number of documents to skip
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10)
+
+    // Find requisitions with pagination
+    const requisitions = await Requisition.find({ drNumber: { $regex: regex } })
+      .populate('userId', 'name email')
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+
+    // Get the total count of matching documents
+    const totalCount = await Requisition.countDocuments({ drNumber: { $regex: regex } })
 
     if (requisitions.length === 0) {
-      return res
-        .status(404)
-        .json({ message: 'No requisitions found with the provided DR Number' })
+      return res.status(404).json({ message: 'No requisitions found with the provided DR Number' })
     }
 
-    res.status(200).json(requisitions)
+    res.status(200).json({
+      data: requisitions,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    })
   } catch (error) {
     res.status(500).json({ message: 'Server Error', error: error.message })
   }

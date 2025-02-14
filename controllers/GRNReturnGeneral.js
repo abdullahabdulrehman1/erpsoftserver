@@ -2,9 +2,7 @@ import GRN from '../models/GRNGeneral.js'
 import GRNReturnGeneral from '../models/GRNReturnGeneral.js'
 import { User } from '../models/user.js'
 import { generatePdfReport } from '../utils/pdfReportUtil.js'
-import { fileURLToPath } from 'url'
-import { dirname } from 'path'
-
+import mongoose from 'mongoose'
 import moment from 'moment'
 
 export const createReturnGRN = async (req, res) => {
@@ -277,5 +275,44 @@ export const generateGRNReturnReport = async (req, res) => {
   } catch (error) {
     console.error('Error:', error.message)
     res.status(500).json({ message: error.message })
+  }
+}
+export const searchGRNReturnGeneral = async (req, res) => {
+  const { grnrNumber, page = 1, limit = 10 } = req.query
+
+  if (!grnrNumber) {
+    return res.status(400).json({ message: 'GRNR Number is required' })
+  }
+
+  try {
+    // Create a search query object
+    const searchQuery = {
+      grnrNumber: { $regex: new RegExp(grnrNumber, 'i') }
+    }
+
+    // Calculate the number of documents to skip
+    const skip = (parseInt(page, 10) - 1) * parseInt(limit, 10)
+
+    // Find GRN Return Generals with pagination
+    const grnReturns = await GRNReturnGeneral.find(searchQuery)
+      .populate('userId', 'name email')
+      .skip(skip)
+      .limit(parseInt(limit, 10))
+
+    // Get the total count of matching documents
+    const totalCount = await GRNReturnGeneral.countDocuments(searchQuery)
+
+    if (grnReturns.length === 0) {
+      return res.status(404).json({ message: 'No GRN Return Generals found with the provided GRNR Number' })
+    }
+
+    res.status(200).json({
+      data: grnReturns,
+      totalCount,
+      totalPages: Math.ceil(totalCount / limit),
+      currentPage: parseInt(page, 10)
+    })
+  } catch (error) {
+    res.status(500).json({ message: 'Server Error', error: error.message })
   }
 }

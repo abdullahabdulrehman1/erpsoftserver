@@ -40,7 +40,7 @@
     drNumber: {
       type: String,
       required: true,
-      maxlength: 10,
+      
     },
     date: {
       type: Date,
